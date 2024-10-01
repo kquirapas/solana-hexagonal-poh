@@ -1,0 +1,5 @@
+function send_tx {
+	echo "Sending transaction..."
+}
+
+eval "$@"

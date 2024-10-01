@@ -1,5 +1,8 @@
-use solana_hexagonal_poh::add;
+use solana_hexagonal_poh::prelude::*;
 
-fn main() {
-    println!("Add {}", add(1, 2));
+#[tokio::main]
+async fn main() {
+    let rpc = Rpc::new(String::from("0.0.0.0"), String::from("3000"));
+
+    rpc.run().await;
 }

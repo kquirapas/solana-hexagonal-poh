@@ -1,14 +1,12 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
 #[cfg(test)]
-mod tests {
-    use super::*;
+mod tests;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub mod config;
+pub mod node;
+pub mod rpc;
+
+pub mod prelude {
+    pub use super::config::*;
+    pub use super::node::*;
+    pub use super::rpc::*;
 }
