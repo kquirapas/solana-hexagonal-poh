@@ -1,0 +1,12 @@
+[package]
+name = "solana-hexagonal-poh"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "shp"
+path = "bin/main.rs"
+test = false
+bench = false
+
+[dependencies]
