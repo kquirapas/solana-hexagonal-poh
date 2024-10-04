@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests;
 
-pub mod config;
+pub mod core;
 pub mod node;
-pub mod rpc;
+pub mod poh;
 
 pub mod prelude {
-    pub use super::config::*;
+    pub use super::core::*;
     pub use super::node::*;
-    pub use super::rpc::*;
+    pub use super::poh::*;
 }

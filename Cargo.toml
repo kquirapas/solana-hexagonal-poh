@@ -13,7 +13,9 @@ bench = false
 anyhow = "1.0.89"
 axum = "0.7.7"
 blake3 = "1.5.4"
-dotenvy = "0.15.7"
-thiserror = "1.0.64"
-tokio = { version = "1.40.0", features = [ "rt-multi-thread", "macros" ] }
-tracing = "0.1.40"
+# higher clap versions have been problematic with derive feature
+clap = { version = "=4.5.17", features = ["derive"] }
+serde = "1.0.210"
+serde_json = "1.0.128"
+spinners = "4.1.1"
+tokio = { version = "1.40.0", features = [ "rt-multi-thread", "macros", "signal" ] }
