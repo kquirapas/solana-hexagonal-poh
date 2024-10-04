@@ -1,7 +1,12 @@
 use crate::poh::Poh;
 use anyhow::{bail, Result};
-use axum::{extract::Json, routing::put, Router};
+use axum::{
+    extract::{Json, State},
+    routing::put,
+    Router,
+};
 use spinners::{Spinner, Spinners};
+use std::sync::Arc;
 
 pub struct Node {
     rpc: String,
@@ -16,8 +21,9 @@ impl Node {
         }
     }
 
-    pub async fn run(&self) -> Result<()> {
+    pub async fn run(&mut self) -> Result<()> {
         let app = Router::new().route("/", put(queue_transaction));
+        // .with_state(shared_poh);
 
         let listener_result = tokio::net::TcpListener::bind(self.rpc.clone()).await;
         if let Err(e) = listener_result {
@@ -27,7 +33,7 @@ impl Node {
 
         let run_server = async {
             // ⠋ Node is running...
-            let sp = Spinner::new(Spinners::Dots, "Node is running...".into());
+            let _sp = Spinner::new(Spinners::Dots, "Node is running...".into());
             axum::serve(listener, app).await
         };
 
@@ -56,7 +62,11 @@ impl Node {
 //      message: 13456534
 // }
 async fn queue_transaction(Json(payload): Json<serde_json::Value>) -> String {
-    let timestamp = payload.get("message").unwrap();
-    println!("Payload: {}", payload.get("message").unwrap());
-    String::from("Transaction Received")
+    let message = payload.get("message").unwrap().as_str().unwrap();
+    let timestamp: u64 = payload.get("timestamp").unwrap().as_u64().unwrap();
+
+    println!("message: {}", message);
+    println!("timestamp: {}", timestamp);
+
+    String::from("transaction queued")
 }
