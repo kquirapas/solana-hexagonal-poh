@@ -6,7 +6,6 @@ use axum::{
     Router,
 };
 use spinners::{Spinner, Spinners};
-use std::sync::Arc;
 
 pub struct Node {
     rpc: String,
@@ -17,7 +16,8 @@ impl Node {
     pub fn new(base_url: &str, port: &str) -> Self {
         Node {
             rpc: format!("{base_url}:{port}"),
-            poh: Poh::new(),
+            // TODO: Add parameter for buffer size
+            poh: Poh::new(None),
         }
     }
 
