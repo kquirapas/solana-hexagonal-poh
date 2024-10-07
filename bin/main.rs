@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
 
     match mode {
         Mode::Node => {
-            let node = Node::new(base_url, port);
+            let mut node = Node::new(base_url, port);
             node.run().await
         }
     }

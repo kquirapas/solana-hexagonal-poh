@@ -44,10 +44,16 @@ impl Node {
                 }
             }
 
+            _ = Poh::vdf(self.poh.subscribe()) => {}
+
+            _ = self.poh.run() => {}
+
             _ = tokio::signal::ctrl_c() => {
                 println!("Received shutdown signal...");
             }
         }
+
+        Poh::shutdown(self.poh.subscribe()).await;
 
         println!("Cleaning up...");
         println!("Shutting down...");

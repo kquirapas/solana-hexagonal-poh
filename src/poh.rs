@@ -7,18 +7,23 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 pub enum Payload {
     RegisterEvent { transaction: Transaction },
     Shutdown,
+    Tick,
 }
 
 pub struct Event {
-    pub count: u64,
     pub transaction: Transaction,
+}
+
+pub struct Record {
+    hash: Hash,
+    count: u64,
+    event: Option<Event>,
 }
 
 pub struct Poh {
     last_hash: Hash,
-    record: Vec<Hash>,
-    events: Vec<Event>,
-    count: u64,
+    last_count: u64,
+    record: Vec<Record>,
     receiver: Receiver<Payload>,
     sender: Sender<Payload>,
 }
@@ -34,68 +39,99 @@ impl Poh {
 
         let (tx, rx) = channel(buffer_size);
 
-        let count = u64::default();
+        let count: u64 = 1;
         let mut hasher = Hasher::new();
         hasher.update(&count.to_le_bytes());
         let hash = hasher.finalize();
+        let record = Record {
+            hash,
+            count,
+            event: None,
+        };
 
         Self {
             last_hash: hash,
-            record: vec![hash],
-            events: Vec::new(),
-            count,
+            last_count: count,
+            record: vec![record],
             receiver: rx,
             sender: tx,
         }
     }
 
-    pub fn get_sender(&self) -> Sender<Payload> {
+    pub fn subscribe(&self) -> Sender<Payload> {
         self.sender.clone()
     }
 
-    async fn tick(&mut self) {
-        let new_count = self.count + 1;
+    fn tick(&mut self) {
+        let new_count = self.last_count + 1;
+
         let mut hasher = Hasher::new();
         hasher.update(self.last_hash.as_bytes());
-        hasher.update(&self.count.to_le_bytes());
+        hasher.update(&new_count.to_le_bytes());
         let new_hash = hasher.finalize();
 
-        self.record.push(new_hash);
-        self.count = new_count;
+        self.record.push(Record {
+            hash: new_hash,
+            count: new_count,
+            event: None,
+        });
+        self.last_count = new_count;
         self.last_hash = new_hash;
     }
 
     fn register_event(&mut self, event: Event) {
+        let new_count = self.last_count + 1;
+
         let mut hasher = Hasher::new();
         hasher.update(self.last_hash.as_bytes());
-        hasher.update(&event.count.to_le_bytes());
+        hasher.update(&new_count.to_le_bytes());
         hasher.update(event.transaction.message.as_bytes());
         let new_hash = hasher.finalize();
 
-        self.record.push(new_hash);
-        self.count = event.count;
+        self.record.push(Record {
+            hash: new_hash,
+            count: new_count,
+            event: Some(event),
+        });
+        self.last_count = new_count;
         self.last_hash = new_hash;
     }
 
-    pub async fn run(&'static mut self) -> Result<()> {
+    pub async fn run(&mut self) -> Result<()> {
         loop {
             tokio::select! {
                 payload = self.receiver.recv() => {
-                    if payload.is_none() { continue }
-
                     match payload.unwrap() {
-                        Payload::Shutdown => break,
-                        Payload::RegisterEvent {transaction} => {
-                            let event = Event {count: self.count, transaction};
-                            self.register_event(event);
-                        }
+                        Payload::Tick => {},
+                        Payload::Shutdown => {
+                            break;
+                        },
+                        Payload::RegisterEvent { transaction } => {},
                     }
-                }
-
-                _ = self.tick() => {}
+                },
             }
         }
 
         Ok(())
+    }
+
+    pub async fn vdf(sender: Sender<Payload>) {
+        loop {
+            // TODO: Eliminate unwrap
+            sender.send(Payload::Tick).await.unwrap();
+        }
+    }
+
+    pub async fn add_transaction(sender: Sender<Payload>, transaction: Transaction) {
+        // Eliminate unwrap
+        sender
+            .send(Payload::RegisterEvent { transaction })
+            .await
+            .unwrap();
+    }
+
+    pub async fn shutdown(sender: Sender<Payload>) {
+        // Eliminate unwrap
+        sender.send(Payload::Shutdown).await.unwrap();
     }
 }
